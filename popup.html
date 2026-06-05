@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UIU Course Code Decoder</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      /* UIU Orange Theme */
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --surface2: #fff8f3;
+      --accent: #F26522;
+      /* UIU Signature Orange */
+      --accent-hover: #d95a1e;
+      --accent-light: #fdece3;
+
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --border-color: #e5e7eb;
+
+      --success: #10b981;
+      --danger: #ef4444;
+      --radius: 12px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      width: 350px;
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: overlay;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .header {
+      background: linear-gradient(135deg, #FF7A00 0%, var(--accent) 100%);
+      padding: 20px 20px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      color: white;
+      box-shadow: var(--shadow-md);
+      position: relative;
+      z-index: 10;
+    }
+
+    .header-icon {
+      width: 40px;
+      height: 40px;
+      background: #ffffff;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      backdrop-filter: blur(4px);
+      flex-shrink: 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-text h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+    }
+
+    .header-text p {
+      font-size: 0.75rem;
+      opacity: 0.9;
+      margin-top: 3px;
+      font-weight: 500;
+    }
+    .body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .stat-pill {
+      background: var(--surface);
+      border: 1px solid var(--border-color);
+      border-radius: 999px;
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .stat-value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toggle-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .toggle-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .switch-track {
+      position: absolute;
+      inset: 0;
+      background: #e2e8f0;
+      border-radius: 999px;
+      transition: background 0.3s ease;
+      cursor: pointer;
+    }
+
+    .switch input:checked+.switch-track {
+      background: var(--accent);
+    }
+
+    .switch-track::before {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 3px;
+      top: 3px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .switch input:checked+.switch-track::before {
+      transform: translateX(20px);
+    }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+
+    .status-dot.active {
+      background: var(--success);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+    }
+
+    .status-dot.inactive {
+      background: var(--danger);
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    }
+    .allowlist-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .allowlist-input-row input {
+      flex: 1;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 0.75rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .allowlist-input-row input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-light);
+    }
+
+    .allowlist-input-row button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0 14px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+
+    .allowlist-input-row button:hover {
+      background: var(--accent-hover);
+    }
+
+    .allowlist-container {
+      max-height: 80px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .allowlist-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .allowlist-item button {
+      background: none;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+      border-radius: 4px;
+    }
+
+    .allowlist-item button:hover {
+      background: #fee2e2;
+    }
+    .mode-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .mode-option {
+      position: relative;
+    }
+
+    .mode-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .mode-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 4px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      height: 100%;
+      box-shadow: inset 0 0 0 1px var(--border-color);
+    }
+
+    .mode-option input:checked+.mode-btn {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      box-shadow: none;
+    }
+
+    .mode-icon {
+      font-size: 1.2rem;
+    }
+
+    .mode-name {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .course-list-container {
+      max-height: 130px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #f8fafc;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .course-item {
+      display: flex;
+      flex-direction: column;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 6px;
+    }
+
+    .course-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .course-code {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .course-name {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .btn-reload {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.02em;
+      box-shadow: 0 4px 10px rgba(242, 101, 34, 0.25);
+    }
+
+    .btn-reload:hover {
+      opacity: 0.9;
+    }
+
+    .btn-reload:active {
+      transform: scale(0.98);
+      box-shadow: none;
+    }
+    .footer {
+      padding: 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .footer-note {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .footer-note::before {
+      content: '💡';
+      font-size: 0.8rem;
+    }
+
+    .credits {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: var(--text-main);
+      background: var(--bg);
+      padding: 6px 12px;
+      border-radius: 99px;
+      border: 1px solid var(--border-color);
+      width: 100%;
+    }
+
+    .credits span {
+      font-weight: 500;
+    }
+
+    .credits strong {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .github-link {
+      display: flex;
+      align-items: center;
+      color: var(--text-main);
+      transition: color 0.2s;
+    }
+
+    .github-link:hover {
+      color: var(--accent);
+    }
+
+    .github-link svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <div class="header-icon">
+      <img src="icons/icon.png" alt="Logo" style="width: 24px; height: 24px; object-fit: contain;" />
+    </div>
+    <div class="header-text">
+      <h1>UIU Course Code Decoder</h1>
+      <p>Never guess a course code again</p>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="stat-pill">
+      <span class="stat-label">Courses Indexed</span>
+      <span class="stat-value" id="courseCount">—</span>
+    </div>
+    <div class="card">
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Enable on this site</div>
+          <div class="toggle-sub" id="currentSite">—</div>
+        </div>
+        <label class="switch" id="toggleLabel">
+          <input type="checkbox" id="siteToggle" checked />
+          <span class="switch-track"></span>
+        </label>
+      </div>
+      <div class="status-bar">
+        <div class="status-dot active" id="statusDot"></div>
+        <span id="statusText">Active on this page</span>
+      </div>
+    </div>
+    <div class="card">
+      <span class="card-title">Display Mode</span>
+      <div class="mode-group">
+        <label class="mode-option">
+          <input type="radio" name="mode" value="inline" id="modeInline" />
+          <span class="mode-btn" title="Adds full name in parentheses">
+            <span class="mode-icon">✏️</span>
+            <span class="mode-name">Inline</span>
+          </span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="mode" value="tooltip" id="modeTooltip" />
+          <span class="mode-btn" title="Hover to see full name">
+            <span class="mode-icon">💬</span>
+            <span class="mode-name">Tooltip</span>
+          </span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="mode" value="highlight" id="modeHighlight" />
+          <span class="mode-btn" title="Yellow background, name on hover">
+            <span class="mode-icon">✨</span>
+            <span class="mode-name">Highlight</span>
+          </span>
+        </label>
+      </div>
+    </div>
+    <div class="card">
+      <span class="card-title">Allowed Domains (Supports *)</span>
+      <div class="allowlist-input-row">
+        <input type="text" id="allowlistInput" placeholder="e.g. ucam.uiu.ac.bd" />
+        <button id="allowlistBtn">Add</button>
+      </div>
+      <div id="allowlistContainer" class="allowlist-container"></div>
+    </div>
+    <div class="card">
+      <span class="card-title">Loaded Courses Database</span>
+      <div class="course-list-container" id="courseListContainer">
+      </div>
+    </div>
+    <button class="btn-reload" id="reloadBtn">
+      <svg style="width:14px; height:14px; margin-right:4px; vertical-align:middle; fill:white;" viewBox="0 0 24 24">
+        <path
+          d="M12 2v4c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8V2zm1.88 3.88L17.76 9.76l-1.41 1.41L12.46 7.29 8.59 11.17l-1.41-1.41 5.29-5.29 1.41 1.41z" />
+      </svg>
+      Reload Courses from File
+    </button>
+
+  </div>
+
+  <div class="footer">
+    <div class="footer-note">Changes take effect on page reload.</div>
+    <div class="credits">
+      <span>Developed by <strong>Sadid Ahmed</strong></span>
+      <span style="color:var(--border-color)">|</span>
+      <a href="https://github.com/litch07/what-is-this-course" target="_blank" title="View Source on GitHub"
+        class="github-link" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+        </svg>
+      </a>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+
+</html>
