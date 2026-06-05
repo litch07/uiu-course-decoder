@@ -1,10 +1,9 @@
-// content.js — Scans page text nodes for UIU course codes and decorates them
-// based on the user's chosen display mode (highlight / tooltip / inline).
+// content.js — Finds UIU course codes on the page and adds their full names!
 
 (function () {
   "use strict";
 
-  // Skip PDF files — there is nothing useful we can do with them.
+  // Skip PDFs, our DOM scripts won't work there anyway
   if (document.contentType === "application/pdf") return;
   if (window.location.pathname.toLowerCase().endsWith(".pdf")) return;
 
@@ -15,14 +14,11 @@
   let observer = null;
   let injectedStyles = false;
 
-  // Attribute we stamp on every element we have already processed,
-  // so the MutationObserver doesn't process the same node twice.
+  // We tag processed elements so we don't end up checking them twice in a loop
   const PROCESSED_ATTR = "data-cce-done";
 
-  // ---------------------------------------------------------------------------
-  // Build a single combined regex from every course code in the map.
-  // The flexible pattern lets "PHY1103" and "PHY  1103" both match "PHY 1103".
-  // ---------------------------------------------------------------------------
+  // Build one big regex from all the course codes.
+  // The flexible pattern makes sure "PHY1103" and "PHY  1103" both work!
   function buildRegex(courseMap) {
     const patterns = Object.keys(courseMap).map((code) => {
       const escaped = code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -32,7 +28,7 @@
     return new RegExp(patterns.join("|"), "gi");
   }
 
-  // Look up a matched string in the courses map, tolerating extra whitespace.
+  // Matches the text to a course, ignoring extra spaces
   function resolve(matched) {
     const upper = matched.toUpperCase().replace(/\s+/g, " ").trim();
     if (courses[upper]) return { key: upper, name: courses[upper] };
@@ -43,9 +39,8 @@
     return null;
   }
 
-  // Check whether the extension is allowed to run on `host`.
-  // For iframes, we walk up the ancestor chain so enabling a parent domain
-  // automatically enables any iframes it embeds.
+  // Checks if the extension should run on this site.
+  // We also check ancestor frames to make sure it works inside iframes (like embedded google sheets)!
   function isHostAllowed(host, allowedSites) {
     const matches = (h) =>
       allowedSites.some((pattern) => {
@@ -55,7 +50,7 @@
 
     if (matches(host)) return true;
 
-    // Check ancestor frames (available in modern Chrome for cross-origin iframes).
+    // Check ancestor frames for cross-origin iframes
     if (window.location.ancestorOrigins) {
       for (let i = 0; i < window.location.ancestorOrigins.length; i++) {
         try {
@@ -67,7 +62,7 @@
       }
     }
 
-    // Same-origin fallback: try accessing window.top directly.
+    // Same-origin fallback
     try {
       if (window !== window.top && window.top.location.hostname) {
         if (matches(window.top.location.hostname)) return true;
@@ -77,10 +72,8 @@
     return false;
   }
 
-  // ---------------------------------------------------------------------------
-  // Inject CSS once per page, plus a single shared tooltip <div> that we move
-  // with JS instead of creating one tooltip per element (much cheaper).
-  // ---------------------------------------------------------------------------
+  // Inject CSS once per page. We use one shared tooltip <div> that we move
+  // around with JS instead of creating one tooltip per element (much faster!)
   function injectStyles() {
     if (injectedStyles) return;
     injectedStyles = true;
@@ -129,7 +122,7 @@
     `;
     (document.head || document.documentElement).appendChild(style);
 
-    // One global tooltip element, repositioned on mouseover.
+    // One global tooltip element, repositioned on mouseover
     const globalTooltip = document.createElement("div");
     globalTooltip.className = "cce-global-tooltip";
     (document.body || document.documentElement).appendChild(globalTooltip);
@@ -156,7 +149,7 @@
     });
   }
 
-  // Tags whose content we must never touch.
+  // Tags whose text we shouldn't mess with
   const SKIP_TAGS = new Set([
     "SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "INPUT",
     "SELECT", "OPTION", "CODE", "PRE", "KBD", "SAMP",
@@ -172,8 +165,7 @@
     return false;
   }
 
-  // Walk up the DOM to see if a node lives inside a skipped element or one
-  // we have already processed. If so, we leave it alone.
+  // Check if a node is inside a skipped element or one we already processed
   function isInsideSkippedElement(node) {
     let el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
     while (el) {
@@ -184,19 +176,12 @@
     return false;
   }
 
-  // ---------------------------------------------------------------------------
-  // Some sites render course codes split across HTML elements, e.g.:
-  //   <td>PHY<br>1103</td>  or  <td><span>CSE</span><span>3421</span></td>
-  //
-  // This function fixes two common patterns before the main text scan:
-  //   1. Inline-only containers whose entire text resolves to a course code —
-  //      we flatten them to a plain text node.
-  //   2. <br> tags that sit between a letter prefix and a digit suffix —
-  //      we remove the <br> and merge the surrounding text nodes.
-  // ---------------------------------------------------------------------------
+  // Some sites are tricky and split course codes with HTML (like <span> or <br>).
+  // We try to merge them back into a single plain text node before scanning.
   function normalizeCourseSplits(root) {
     if (!root || !root.querySelectorAll) return;
 
+    // Fix 1: Flatten inline elements containing only a course code
     try {
       const elements = root.querySelectorAll(
         "td, th, span, p, a, b, strong, i, em, label, div, li, h1, h2, h3, h4, h5, h6"
@@ -204,14 +189,15 @@
       for (const el of elements) {
         if (shouldSkipElement(el)) continue;
         if (el.children.length === 0) continue;
-        // Don't collapse elements that contain block-level children — that
-        // would destroy the page layout.
+        
+        // Skip anything with block elements inside to avoid messing up the page layout
         if (el.querySelector("div, p, table, ul, ol, li, section, article, tr, td")) continue;
         const text = el.textContent.replace(/\s+/g, " ").trim();
         if (resolve(text)) el.textContent = text;
       }
     } catch (e) {}
 
+    // Fix 2: Remove <br> tags splitting the letter prefix and digit suffix
     try {
       const brs = root.querySelectorAll("br");
       for (const br of brs) {
@@ -219,14 +205,14 @@
 
         let prev = br.previousSibling;
         let next = br.nextSibling;
-        // Skip empty whitespace-only text nodes on either side.
+        
+        // Ignore empty text nodes
         while (prev && prev.nodeType === Node.TEXT_NODE && !prev.nodeValue.trim())
           prev = prev.previousSibling;
         while (next && next.nodeType === Node.TEXT_NODE && !next.nodeValue.trim())
           next = next.nextSibling;
 
-        // Merge only when the <br> is between "letters" and "digits" — the
-        // two halves of a split course code.
+        // If the <br> sits right between "letters" and "numbers", remove it
         if (
           prev && next &&
           prev.nodeType === Node.TEXT_NODE &&
@@ -242,23 +228,16 @@
     } catch (e) {}
   }
 
-  // ---------------------------------------------------------------------------
-  // Process a single text node: find all course codes, replace each one with
-  // the appropriate decorated element (span for HTML, tspan for SVG).
-  //
-  // SVG charts (e.g. Highcharts) are handled specially:
-  //   - Inside a tooltip  → inline mode (full name in parentheses, word-wrapped)
-  //   - Truncated labels  → colour the visible text and store the full name
-  //   - Other SVG text    → highlight mode regardless of user setting
-  // ---------------------------------------------------------------------------
+  // Scans a single text node for courses and replaces matches with styled spans/tspans.
+  // We handle SVG text (like in Highcharts) carefully so we don't break charts!
   function processTextNode(textNode) {
     let text = textNode.nodeValue;
     let matchText = text;
     let isHighchartsTruncated = false;
     let titleElToRemove = null;
 
-    // Highcharts truncates long axis labels with "…" and stores the real value
-    // in a child <title> element. Detect that and use the full text for matching.
+    // Highcharts truncates long labels with "…" and puts the real value in a <title>.
+    // Let's grab the real value from the <title> so we can decode it!
     let elForTitle = textNode.parentElement;
     while (elForTitle && elForTitle !== document.documentElement) {
       const tag = elForTitle.tagName && elForTitle.tagName.toUpperCase();
@@ -280,7 +259,7 @@
     if (!courseRegex.test(matchText)) return null;
     courseRegex.lastIndex = 0;
 
-    // Determine SVG context so we can pick the right element type and style.
+    // Check if we're inside an SVG chart or its tooltip
     let isSvg = false;
     let isTooltip = false;
     let curr = textNode.parentElement;
@@ -290,13 +269,14 @@
       curr = curr.parentElement;
     }
 
-    // Override the user's mode for SVG contexts where CSS classes don't apply.
+    // CSS tooltips don't work in SVGs, so we force highlight mode for charts
     let effectiveMode = mode;
     if (isSvg && !isTooltip) effectiveMode = "highlight";
     else if (isTooltip) effectiveMode = "inline";
 
     const frag = document.createDocumentFragment();
     let lastIndex = 0;
+    let match;
     let replaced = false;
 
     courseRegex.lastIndex = 0;
@@ -305,8 +285,7 @@
       if (!resolved) continue;
       replaced = true;
 
-      // Special case: the visible text is truncated ("CSE …"). Replace the
-      // whole node with a highlighted tspan showing the truncated text.
+      // For truncated chart labels ("CSE …"), just highlight the whole thing
       if (isHighchartsTruncated) {
         const wrap = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
         wrap.setAttribute(PROCESSED_ATTR, "1");
@@ -320,7 +299,7 @@
         break;
       }
 
-      // Append any plain text that came before this match.
+      // Add the normal text before the matched course
       if (match.index > lastIndex) {
         frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
       }
@@ -330,7 +309,7 @@
         wrap.setAttribute(PROCESSED_ATTR, "1");
 
         if (effectiveMode === "inline") {
-          // Tooltip mode: word-wrap the "CODE (Name)" text into multiple tspans.
+          // Wrap text inside SVG tooltips to prevent it from bleeding out
           wrap.setAttribute("font-weight", "bold");
           const fullText = `${match[0]} (${resolved.name})`;
           const words = fullText.split(" ");
@@ -364,7 +343,7 @@
             wrap.appendChild(span);
           }
         } else {
-          // Highlight or tooltip mode in SVG: colour the text and attach the name.
+          // Regular highlight in an SVG
           wrap.style.cursor = "help";
           wrap.dataset.cceName = resolved.name;
           wrap.setAttribute("fill", "#ff8000");
@@ -380,7 +359,7 @@
 
         frag.appendChild(wrap);
       } else {
-        // Regular HTML path.
+        // Normal HTML text
         const wrap = document.createElement("span");
         wrap.setAttribute(PROCESSED_ATTR, "1");
         if (effectiveMode === "tooltip") {
@@ -407,8 +386,7 @@
       frag.appendChild(document.createTextNode(text.slice(lastIndex)));
     }
 
-    // Remove any native <title> or title="" attributes that would conflict
-    // with our custom tooltip.
+    // Remove old <title> attributes so they don't block our custom tooltip
     if (titleElToRemove) titleElToRemove.remove();
     let pNode = textNode.parentElement;
     while (pNode && pNode !== document.documentElement) {
@@ -419,8 +397,7 @@
     return frag;
   }
 
-  // Walk `root` with a TreeWalker, collect all text nodes that need replacing,
-  // then do the replacements in a second pass to avoid invalidating the walker.
+  // Walk through the DOM looking for text nodes to process
   function processNode(root) {
     if (!courseRegex || !enabled) return;
     if (isInsideSkippedElement(root)) return;
@@ -452,10 +429,8 @@
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Highcharts resizes its tooltip box to fit the original (short) text. After
-  // we expand it with the course name, we need to resize the background rect.
-  // ---------------------------------------------------------------------------
+  // Highcharts draws its tooltips perfectly wrapped to the original short text.
+  // Since we add the long course names, we have to stretch the background box manually!
   function adjustHighchartsTooltipBackground(tooltipGroup) {
     const origBox = tooltipGroup.querySelector(".highcharts-label-box");
     if (!origBox) return;
@@ -484,11 +459,8 @@
     }, 0);
   }
 
-  // ---------------------------------------------------------------------------
-  // MutationObserver queue — batches DOM mutations into a single 100 ms timeout
-  // so rapidly-added nodes (e.g. virtual scroll lists) don't cause a flood of
-  // synchronous re-scans.
-  // ---------------------------------------------------------------------------
+  // We queue up DOM changes and process them in batches every 100ms
+  // so we don't lag the page when lots of nodes are added at once
   let scanTimeout = null;
   const nodesToProcess = new Set();
 
@@ -509,7 +481,7 @@
           const parent = node.parentNode;
           parent.replaceChild(frag, node);
 
-          // If this text node was inside a Highcharts tooltip, fix the background.
+          // If we just edited text inside a Highcharts tooltip, fix its background box
           let tg = parent;
           while (tg && tg !== document.documentElement) {
             if (tg.classList && tg.classList.contains("highcharts-tooltip")) break;
@@ -558,7 +530,7 @@
     nodesToProcess.clear();
   }
 
-  // Entry point — called once with data from chrome.storage.
+  // Load everything up once we have our settings from storage
   function init(storageData) {
     courses = storageData.courses || {};
     mode = storageData.mode || "highlight";
@@ -578,10 +550,9 @@
 
   chrome.storage.local.get(["courses", "mode", "allowedSites"], init);
 
-  // The popup sends this message after the user toggles a site or changes mode.
-  // The simplest correct response is a full page reload so the new settings apply.
+  // If the user changes settings or updates courses in the popup, reload the page to apply them!
   chrome.runtime.onMessage.addListener((message) => {
-    if (message.type === "TOGGLE_SITE" || message.type === "MODE_CHANGED") {
+    if (message.type === "TOGGLE_SITE" || message.type === "MODE_CHANGED" || message.type === "COURSES_UPDATED") {
       window.location.reload();
     }
   });
