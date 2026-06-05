@@ -1,6 +1,10 @@
+// content.js — Scans page text nodes for UIU course codes and decorates them
+// based on the user's chosen display mode (highlight / tooltip / inline).
+
 (function () {
   "use strict";
 
+  // Skip PDF files — there is nothing useful we can do with them.
   if (document.contentType === "application/pdf") return;
   if (window.location.pathname.toLowerCase().endsWith(".pdf")) return;
 
@@ -11,17 +15,24 @@
   let observer = null;
   let injectedStyles = false;
 
+  // Attribute we stamp on every element we have already processed,
+  // so the MutationObserver doesn't process the same node twice.
   const PROCESSED_ATTR = "data-cce-done";
 
+  // ---------------------------------------------------------------------------
+  // Build a single combined regex from every course code in the map.
+  // The flexible pattern lets "PHY1103" and "PHY  1103" both match "PHY 1103".
+  // ---------------------------------------------------------------------------
   function buildRegex(courseMap) {
     const patterns = Object.keys(courseMap).map((code) => {
       const escaped = code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const flexible = escaped.replace(/\\ /g, "[\\s]*"); // Match zero or more whitespaces (handles PHY1103 and PHY  1103)
+      const flexible = escaped.replace(/\\ /g, "[\\s]*");
       return `(?<![\\w-])${flexible}(?![\\w-])`;
     });
     return new RegExp(patterns.join("|"), "gi");
   }
 
+  // Look up a matched string in the courses map, tolerating extra whitespace.
   function resolve(matched) {
     const upper = matched.toUpperCase().replace(/\s+/g, " ").trim();
     if (courses[upper]) return { key: upper, name: courses[upper] };
@@ -32,41 +43,48 @@
     return null;
   }
 
+  // Check whether the extension is allowed to run on `host`.
+  // For iframes, we walk up the ancestor chain so enabling a parent domain
+  // automatically enables any iframes it embeds.
   function isHostAllowed(host, allowedSites) {
-    const isAllowed = (h) => allowedSites.some(pattern => {
-      // Convert wildcard pattern (e.g. *.university.edu) to regex
-      const regexPattern = "^" + pattern.replace(/\./g, "\\.").replace(/\*/g, ".*") + "$";
-      return new RegExp(regexPattern, "i").test(h);
-    });
+    const matches = (h) =>
+      allowedSites.some((pattern) => {
+        const re = "^" + pattern.replace(/\./g, "\\.").replace(/\*/g, ".*") + "$";
+        return new RegExp(re, "i").test(h);
+      });
 
-    if (isAllowed(host)) return true;
+    if (matches(host)) return true;
 
-    // For iframes: check if any ancestor origin is allowed
+    // Check ancestor frames (available in modern Chrome for cross-origin iframes).
     if (window.location.ancestorOrigins) {
       for (let i = 0; i < window.location.ancestorOrigins.length; i++) {
         try {
-          const ancestorOrigin = window.location.ancestorOrigins[i];
-          if (ancestorOrigin && ancestorOrigin !== "null") {
-            const ancestorHost = new URL(ancestorOrigin).hostname;
-            if (isAllowed(ancestorHost)) return true;
+          const origin = window.location.ancestorOrigins[i];
+          if (origin && origin !== "null") {
+            if (matches(new URL(origin).hostname)) return true;
           }
-        } catch (e) { }
+        } catch (e) {}
       }
     }
 
-    // Fallback for same-origin top-level access
+    // Same-origin fallback: try accessing window.top directly.
     try {
       if (window !== window.top && window.top.location.hostname) {
-        if (isAllowed(window.top.location.hostname)) return true;
+        if (matches(window.top.location.hostname)) return true;
       }
-    } catch (e) { }
+    } catch (e) {}
 
     return false;
   }
 
+  // ---------------------------------------------------------------------------
+  // Inject CSS once per page, plus a single shared tooltip <div> that we move
+  // with JS instead of creating one tooltip per element (much cheaper).
+  // ---------------------------------------------------------------------------
   function injectStyles() {
     if (injectedStyles) return;
     injectedStyles = true;
+
     const style = document.createElement("style");
     style.id = "cce-custom-styles";
     style.textContent = `
@@ -111,119 +129,145 @@
     `;
     (document.head || document.documentElement).appendChild(style);
 
+    // One global tooltip element, repositioned on mouseover.
     const globalTooltip = document.createElement("div");
     globalTooltip.className = "cce-global-tooltip";
     (document.body || document.documentElement).appendChild(globalTooltip);
 
     document.addEventListener("mouseover", (e) => {
-      const target = e.target.closest ? e.target.closest(".cce-tooltip-wrap, .cce-highlight") : null;
+      const target = e.target.closest
+        ? e.target.closest(".cce-tooltip-wrap, .cce-highlight")
+        : null;
       if (target && target.dataset.cceName) {
         globalTooltip.textContent = target.dataset.cceName;
         const rect = target.getBoundingClientRect();
-        globalTooltip.style.left = (rect.left + rect.width / 2) + "px";
-        globalTooltip.style.bottom = (window.innerHeight - rect.top + 5) + "px";
+        globalTooltip.style.left = rect.left + rect.width / 2 + "px";
+        globalTooltip.style.bottom = window.innerHeight - rect.top + 5 + "px";
         globalTooltip.style.visibility = "visible";
         globalTooltip.style.opacity = "1";
       }
     });
 
     document.addEventListener("mouseout", (e) => {
-      const target = e.target.closest ? e.target.closest(".cce-tooltip-wrap, .cce-highlight") : null;
-      if (target) {
+      if (e.target.closest && e.target.closest(".cce-tooltip-wrap, .cce-highlight")) {
         globalTooltip.style.visibility = "hidden";
         globalTooltip.style.opacity = "0";
       }
     });
   }
 
+  // Tags whose content we must never touch.
   const SKIP_TAGS = new Set([
     "SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "INPUT",
     "SELECT", "OPTION", "CODE", "PRE", "KBD", "SAMP",
     "MATH", "CANVAS", "IFRAME", "OBJECT", "EMBED",
-    "HEAD", "META", "LINK", "TITLE"
+    "HEAD", "META", "LINK", "TITLE",
   ]);
 
   function shouldSkipElement(el) {
     if (!el || el.nodeType !== Node.ELEMENT_NODE) return false;
-    const tag = el.tagName.toUpperCase();
-    if (SKIP_TAGS.has(tag)) return true;
+    if (SKIP_TAGS.has(el.tagName.toUpperCase())) return true;
     if (el.isContentEditable) return true;
     if (el.getAttribute && el.getAttribute("contenteditable") === "true") return true;
     return false;
   }
 
+  // Walk up the DOM to see if a node lives inside a skipped element or one
+  // we have already processed. If so, we leave it alone.
   function isInsideSkippedElement(node) {
     let el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
     while (el) {
-      if (shouldSkipElement(el) || (el.hasAttribute && el.hasAttribute(PROCESSED_ATTR))) {
-        return true;
-      }
+      if (shouldSkipElement(el)) return true;
+      if (el.hasAttribute && el.hasAttribute(PROCESSED_ATTR)) return true;
       el = el.parentElement;
     }
     return false;
   }
 
+  // ---------------------------------------------------------------------------
+  // Some sites render course codes split across HTML elements, e.g.:
+  //   <td>PHY<br>1103</td>  or  <td><span>CSE</span><span>3421</span></td>
+  //
+  // This function fixes two common patterns before the main text scan:
+  //   1. Inline-only containers whose entire text resolves to a course code —
+  //      we flatten them to a plain text node.
+  //   2. <br> tags that sit between a letter prefix and a digit suffix —
+  //      we remove the <br> and merge the surrounding text nodes.
+  // ---------------------------------------------------------------------------
   function normalizeCourseSplits(root) {
     if (!root || !root.querySelectorAll) return;
 
-    // 1. Unify elements whose entire text is exactly a course code but are split by inline tags (like <br> or <span>)
-    // E.g. <td>PHY<br> 1103</td> -> <td>PHY 1103</td>
     try {
-      const elements = root.querySelectorAll('td, th, span, p, a, b, strong, i, em, label, div, li, h1, h2, h3, h4, h5, h6');
+      const elements = root.querySelectorAll(
+        "td, th, span, p, a, b, strong, i, em, label, div, li, h1, h2, h3, h4, h5, h6"
+      );
       for (const el of elements) {
         if (shouldSkipElement(el)) continue;
         if (el.children.length === 0) continue;
-        
-        // Skip if it contains block elements to avoid destroying layout
-        if (el.querySelector('div, p, table, ul, ol, li, section, article, tr, td')) continue;
-
-        const text = el.textContent.replace(/\s+/g, ' ').trim();
-        if (resolve(text)) {
-          el.textContent = text;
-        }
+        // Don't collapse elements that contain block-level children — that
+        // would destroy the page layout.
+        if (el.querySelector("div, p, table, ul, ol, li, section, article, tr, td")) continue;
+        const text = el.textContent.replace(/\s+/g, " ").trim();
+        if (resolve(text)) el.textContent = text;
       }
     } catch (e) {}
 
-    // 2. Remove <br> tags that split a course code inside a larger text block
     try {
-      const brs = root.querySelectorAll('br');
+      const brs = root.querySelectorAll("br");
       for (const br of brs) {
         if (!br.parentNode) continue;
+
         let prev = br.previousSibling;
         let next = br.nextSibling;
-        
-        while (prev && prev.nodeType === Node.TEXT_NODE && !prev.nodeValue.trim()) prev = prev.previousSibling;
-        while (next && next.nodeType === Node.TEXT_NODE && !next.nodeValue.trim()) next = next.nextSibling;
+        // Skip empty whitespace-only text nodes on either side.
+        while (prev && prev.nodeType === Node.TEXT_NODE && !prev.nodeValue.trim())
+          prev = prev.previousSibling;
+        while (next && next.nodeType === Node.TEXT_NODE && !next.nodeValue.trim())
+          next = next.nextSibling;
 
-        if (prev && next && prev.nodeType === Node.TEXT_NODE && next.nodeType === Node.TEXT_NODE) {
-          const prevText = prev.nodeValue;
-          const nextText = next.nodeValue;
-          
-          if (/[a-zA-Z]{2,4}\s*-?\s*$/.test(prevText) && /^\s*\d{3,4}/.test(nextText)) {
-            prev.nodeValue = prevText.replace(/\s*$/, '') + " " + nextText.replace(/^\s*/, '');
-            next.parentNode.removeChild(next);
-            br.parentNode.removeChild(br);
-          }
+        // Merge only when the <br> is between "letters" and "digits" — the
+        // two halves of a split course code.
+        if (
+          prev && next &&
+          prev.nodeType === Node.TEXT_NODE &&
+          next.nodeType === Node.TEXT_NODE &&
+          /[a-zA-Z]{2,4}\s*-?\s*$/.test(prev.nodeValue) &&
+          /^\s*\d{3,4}/.test(next.nodeValue)
+        ) {
+          prev.nodeValue = prev.nodeValue.replace(/\s*$/, "") + " " + next.nodeValue.replace(/^\s*/, "");
+          next.parentNode.removeChild(next);
+          br.parentNode.removeChild(br);
         }
       }
     } catch (e) {}
   }
 
+  // ---------------------------------------------------------------------------
+  // Process a single text node: find all course codes, replace each one with
+  // the appropriate decorated element (span for HTML, tspan for SVG).
+  //
+  // SVG charts (e.g. Highcharts) are handled specially:
+  //   - Inside a tooltip  → inline mode (full name in parentheses, word-wrapped)
+  //   - Truncated labels  → colour the visible text and store the full name
+  //   - Other SVG text    → highlight mode regardless of user setting
+  // ---------------------------------------------------------------------------
   function processTextNode(textNode) {
     let text = textNode.nodeValue;
     let matchText = text;
     let isHighchartsTruncated = false;
     let titleElToRemove = null;
 
-    // Detect Highcharts SVG labels with truncated text and a <title> holding the full value
+    // Highcharts truncates long axis labels with "…" and stores the real value
+    // in a child <title> element. Detect that and use the full text for matching.
     let elForTitle = textNode.parentElement;
     while (elForTitle && elForTitle !== document.documentElement) {
-      if (elForTitle.tagName && elForTitle.tagName.toUpperCase() === 'SVG') break;
-      if (elForTitle.tagName && (elForTitle.tagName.toUpperCase() === 'TEXT' || elForTitle.tagName.toUpperCase() === 'G')) {
-        const titleEl = elForTitle.querySelector('title');
+      const tag = elForTitle.tagName && elForTitle.tagName.toUpperCase();
+      if (tag === "SVG") break;
+      if (tag === "TEXT" || tag === "G") {
+        const titleEl = elForTitle.querySelector("title");
         if (titleEl) {
           titleElToRemove = titleEl;
-          if (text.includes('…') || text.endsWith('...')) {
+          if (text.includes("…") || text.endsWith("...")) {
             matchText = titleEl.textContent;
             isHighchartsTruncated = true;
           }
@@ -236,42 +280,34 @@
     if (!courseRegex.test(matchText)) return null;
     courseRegex.lastIndex = 0;
 
-    let el = textNode.parentElement;
+    // Determine SVG context so we can pick the right element type and style.
     let isSvg = false;
     let isTooltip = false;
-
-    let curr = el;
+    let curr = textNode.parentElement;
     while (curr && curr !== document.documentElement) {
-      if (curr.tagName && curr.tagName.toUpperCase() === 'SVG') {
-        isSvg = true;
-      }
-      if (curr.classList && curr.classList.contains('highcharts-tooltip')) {
-        isTooltip = true;
-      }
+      if (curr.tagName && curr.tagName.toUpperCase() === "SVG") isSvg = true;
+      if (curr.classList && curr.classList.contains("highcharts-tooltip")) isTooltip = true;
       curr = curr.parentElement;
     }
 
+    // Override the user's mode for SVG contexts where CSS classes don't apply.
     let effectiveMode = mode;
-    if (isSvg && !isTooltip) {
-      effectiveMode = "highlight";
-    } else if (isTooltip) {
-      effectiveMode = "inline";
-    }
+    if (isSvg && !isTooltip) effectiveMode = "highlight";
+    else if (isTooltip) effectiveMode = "inline";
 
     const frag = document.createDocumentFragment();
     let lastIndex = 0;
-    let match;
     let replaced = false;
 
     courseRegex.lastIndex = 0;
     while ((match = courseRegex.exec(matchText)) !== null) {
       const resolved = resolve(match[0]);
       if (!resolved) continue;
-
       replaced = true;
 
+      // Special case: the visible text is truncated ("CSE …"). Replace the
+      // whole node with a highlighted tspan showing the truncated text.
       if (isHighchartsTruncated) {
-        // Replace the whole truncated label (e.g. "CSE …") with the highlight wrapper
         const wrap = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
         wrap.setAttribute(PROCESSED_ATTR, "1");
         wrap.classList.add("cce-highlight");
@@ -280,125 +316,111 @@
         wrap.setAttribute("fill", "#ff8000");
         wrap.setAttribute("font-weight", "bold");
         wrap.textContent = text;
-
         frag.appendChild(wrap);
         break;
       }
 
+      // Append any plain text that came before this match.
       if (match.index > lastIndex) {
         frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
       }
 
       if (isSvg) {
+        const wrap = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+        wrap.setAttribute(PROCESSED_ATTR, "1");
+
         if (effectiveMode === "inline") {
-          const wrap = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
-          wrap.setAttribute(PROCESSED_ATTR, "1");
+          // Tooltip mode: word-wrap the "CODE (Name)" text into multiple tspans.
+          wrap.setAttribute("font-weight", "bold");
+          const fullText = `${match[0]} (${resolved.name})`;
+          const words = fullText.split(" ");
+          let currentLine = "";
+          let firstLine = true;
 
-          if (isTooltip) {
-            wrap.setAttribute("font-weight", "bold");
-
-            const fullText = `${match[0]} (${resolved.name})`;
-            const words = fullText.split(" ");
-            let currentLine = "";
-            let firstLine = true;
-
-            for (const word of words) {
-              if (currentLine.length + word.length > 23) {
-                if (currentLine.length > 0) {
-                  const span = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
-                  if (!firstLine) {
-                    span.setAttribute("dy", "1.2em");
-                    span.setAttribute("x", "8");
-                  }
-                  span.textContent = currentLine.trim();
-                  wrap.appendChild(span);
-                  firstLine = false;
+          for (const word of words) {
+            if (currentLine.length + word.length > 23) {
+              if (currentLine.length > 0) {
+                const span = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+                if (!firstLine) {
+                  span.setAttribute("dy", "1.2em");
+                  span.setAttribute("x", "8");
                 }
-                currentLine = word + " ";
-              } else {
-                currentLine += word + " ";
+                span.textContent = currentLine.trim();
+                wrap.appendChild(span);
+                firstLine = false;
               }
+              currentLine = word + " ";
+            } else {
+              currentLine += word + " ";
             }
-            if (currentLine.trim().length > 0) {
-              const span = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
-              if (!firstLine) {
-                span.setAttribute("dy", "1.2em");
-                span.setAttribute("x", "8");
-              }
-              span.textContent = currentLine.trim();
-              wrap.appendChild(span);
-            }
-          } else {
-            wrap.textContent = `${match[0]} (${resolved.name})`;
           }
-          frag.appendChild(wrap);
+          if (currentLine.trim().length > 0) {
+            const span = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+            if (!firstLine) {
+              span.setAttribute("dy", "1.2em");
+              span.setAttribute("x", "8");
+            }
+            span.textContent = currentLine.trim();
+            wrap.appendChild(span);
+          }
         } else {
-          const wrap = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
-          wrap.setAttribute(PROCESSED_ATTR, "1");
+          // Highlight or tooltip mode in SVG: colour the text and attach the name.
           wrap.style.cursor = "help";
           wrap.dataset.cceName = resolved.name;
-
+          wrap.setAttribute("fill", "#ff8000");
           if (effectiveMode === "highlight") {
             wrap.classList.add("cce-highlight");
-            wrap.setAttribute("fill", "#ff8000");
             wrap.setAttribute("font-weight", "bold");
           } else {
             wrap.classList.add("cce-tooltip-wrap");
-            wrap.setAttribute("fill", "#ff8000");
             wrap.setAttribute("text-decoration", "underline");
           }
-
           wrap.textContent = match[0];
-          frag.appendChild(wrap);
         }
+
+        frag.appendChild(wrap);
       } else {
+        // Regular HTML path.
+        const wrap = document.createElement("span");
+        wrap.setAttribute(PROCESSED_ATTR, "1");
         if (effectiveMode === "tooltip") {
-          const wrap = document.createElement("span");
           wrap.className = "cce-tooltip-wrap";
-          wrap.setAttribute(PROCESSED_ATTR, "1");
           wrap.dataset.cceName = resolved.name;
           wrap.textContent = match[0];
-          frag.appendChild(wrap);
         } else if (effectiveMode === "highlight") {
-          const wrap = document.createElement("span");
           wrap.className = "cce-highlight";
-          wrap.setAttribute(PROCESSED_ATTR, "1");
           wrap.dataset.cceName = resolved.name;
           wrap.textContent = match[0];
-          frag.appendChild(wrap);
         } else {
-          const wrap = document.createElement("span");
-          wrap.setAttribute(PROCESSED_ATTR, "1");
           wrap.className = "cce-inline";
           wrap.textContent = `${match[0]} (${resolved.name})`;
-          frag.appendChild(wrap);
         }
+        frag.appendChild(wrap);
       }
 
       lastIndex = match.index + match[0].length;
     }
 
     if (!replaced) return null;
+
     if (!isHighchartsTruncated && lastIndex < text.length) {
       frag.appendChild(document.createTextNode(text.slice(lastIndex)));
     }
 
-    // Remove native <title> elements and title attributes that would conflict with our tooltip
-    if (titleElToRemove) {
-      titleElToRemove.remove();
-    }
-
+    // Remove any native <title> or title="" attributes that would conflict
+    // with our custom tooltip.
+    if (titleElToRemove) titleElToRemove.remove();
     let pNode = textNode.parentElement;
     while (pNode && pNode !== document.documentElement) {
-      if (pNode.hasAttribute && pNode.hasAttribute('title')) {
-        pNode.removeAttribute('title');
-      }
+      if (pNode.hasAttribute && pNode.hasAttribute("title")) pNode.removeAttribute("title");
       pNode = pNode.parentElement;
     }
 
     return frag;
   }
 
+  // Walk `root` with a TreeWalker, collect all text nodes that need replacing,
+  // then do the replacements in a second pass to avoid invalidating the walker.
   function processNode(root) {
     if (!courseRegex || !enabled) return;
     if (isInsideSkippedElement(root)) return;
@@ -426,72 +448,75 @@
     }
 
     for (const { node: textNode, frag } of replacements) {
-      const parent = textNode.parentNode;
-      if (parent) parent.replaceChild(frag, textNode);
+      if (textNode.parentNode) textNode.parentNode.replaceChild(frag, textNode);
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Highcharts resizes its tooltip box to fit the original (short) text. After
+  // we expand it with the course name, we need to resize the background rect.
+  // ---------------------------------------------------------------------------
+  function adjustHighchartsTooltipBackground(tooltipGroup) {
+    const origBox = tooltipGroup.querySelector(".highcharts-label-box");
+    if (!origBox) return;
+
+    origBox.style.display = "none";
+    setTimeout(() => {
+      const textEl = tooltipGroup.querySelector("text");
+      if (!textEl) return;
+
+      const bbox = textEl.getBBox();
+      let customBg = tooltipGroup.querySelector(".cce-custom-tooltip-bg");
+      if (!customBg) {
+        customBg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        customBg.setAttribute("class", "cce-custom-tooltip-bg");
+        customBg.setAttribute("fill", origBox.getAttribute("fill") || "rgba(255,255,255,0.95)");
+        customBg.setAttribute("stroke", origBox.getAttribute("stroke") || "#cccccc");
+        customBg.setAttribute("stroke-width", origBox.getAttribute("stroke-width") || "1");
+        customBg.setAttribute("rx", "5");
+        tooltipGroup.insertBefore(customBg, tooltipGroup.firstChild);
+      }
+
+      customBg.setAttribute("x", bbox.x - 10);
+      customBg.setAttribute("y", bbox.y - 10);
+      customBg.setAttribute("width", bbox.width + 20);
+      customBg.setAttribute("height", bbox.height + 20);
+    }, 0);
+  }
+
+  // ---------------------------------------------------------------------------
+  // MutationObserver queue — batches DOM mutations into a single 100 ms timeout
+  // so rapidly-added nodes (e.g. virtual scroll lists) don't cause a flood of
+  // synchronous re-scans.
+  // ---------------------------------------------------------------------------
   let scanTimeout = null;
   const nodesToProcess = new Set();
-
-  function adjustHighchartsTooltipBackground(tooltipGroup) {
-    const origBox = tooltipGroup.querySelector('.highcharts-label-box');
-    if (origBox) {
-      origBox.style.display = 'none';
-
-      setTimeout(() => {
-        const textEl = tooltipGroup.querySelector('text');
-        if (!textEl) return;
-        const bbox = textEl.getBBox();
-
-        let customBg = tooltipGroup.querySelector('.cce-custom-tooltip-bg');
-        if (!customBg) {
-          customBg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-          customBg.setAttribute("class", "cce-custom-tooltip-bg");
-          const fill = origBox.getAttribute("fill") || "rgba(255, 255, 255, 0.95)";
-          const stroke = origBox.getAttribute("stroke") || "#cccccc";
-          const strokeWidth = origBox.getAttribute("stroke-width") || "1";
-          customBg.setAttribute("fill", fill);
-          customBg.setAttribute("stroke", stroke);
-          customBg.setAttribute("stroke-width", strokeWidth);
-          customBg.setAttribute("rx", "5");
-          tooltipGroup.insertBefore(customBg, tooltipGroup.firstChild);
-        }
-
-        customBg.setAttribute("x", bbox.x - 10);
-        customBg.setAttribute("y", bbox.y - 10);
-        customBg.setAttribute("width", bbox.width + 20);
-        customBg.setAttribute("height", bbox.height + 20);
-      }, 0);
-    }
-  }
 
   function processQueuedNodes() {
     scanTimeout = null;
     if (!enabled || !courseRegex) return;
 
     for (const node of nodesToProcess) {
-      if (document.contains(node)) {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          normalizeCourseSplits(node);
-          processNode(node);
-        } else if (node.nodeType === Node.TEXT_NODE) {
-          if (!isInsideSkippedElement(node)) {
-            if (node.parentNode) normalizeCourseSplits(node.parentNode);
-            const frag = processTextNode(node);
-            if (frag && node.parentNode) {
-              const parent = node.parentNode;
-              parent.replaceChild(frag, node);
+      if (!document.contains(node)) continue;
 
-              let tg = parent;
-              while (tg && tg !== document.documentElement) {
-                if (tg.classList && tg.classList.contains('highcharts-tooltip')) break;
-                tg = tg.parentNode;
-              }
-              if (tg && tg !== document.documentElement) {
-                adjustHighchartsTooltipBackground(tg);
-              }
-            }
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        normalizeCourseSplits(node);
+        processNode(node);
+      } else if (node.nodeType === Node.TEXT_NODE && !isInsideSkippedElement(node)) {
+        if (node.parentNode) normalizeCourseSplits(node.parentNode);
+        const frag = processTextNode(node);
+        if (frag && node.parentNode) {
+          const parent = node.parentNode;
+          parent.replaceChild(frag, node);
+
+          // If this text node was inside a Highcharts tooltip, fix the background.
+          let tg = parent;
+          while (tg && tg !== document.documentElement) {
+            if (tg.classList && tg.classList.contains("highcharts-tooltip")) break;
+            tg = tg.parentNode;
+          }
+          if (tg && tg !== document.documentElement) {
+            adjustHighchartsTooltipBackground(tg);
           }
         }
       }
@@ -501,9 +526,7 @@
 
   function scheduleProcess(node) {
     nodesToProcess.add(node);
-    if (!scanTimeout) {
-      scanTimeout = setTimeout(processQueuedNodes, 100);
-    }
+    if (!scanTimeout) scanTimeout = setTimeout(processQueuedNodes, 100);
   }
 
   function startObserver() {
@@ -535,12 +558,12 @@
     nodesToProcess.clear();
   }
 
+  // Entry point — called once with data from chrome.storage.
   function init(storageData) {
     courses = storageData.courses || {};
     mode = storageData.mode || "highlight";
     const allowedSites = storageData.allowedSites || [];
-    const currentHost = window.location.hostname;
-    enabled = isHostAllowed(currentHost, allowedSites);
+    enabled = isHostAllowed(window.location.hostname, allowedSites);
 
     if (!enabled || Object.keys(courses).length === 0) return;
 
@@ -555,6 +578,8 @@
 
   chrome.storage.local.get(["courses", "mode", "allowedSites"], init);
 
+  // The popup sends this message after the user toggles a site or changes mode.
+  // The simplest correct response is a full page reload so the new settings apply.
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === "TOGGLE_SITE" || message.type === "MODE_CHANGED") {
       window.location.reload();
