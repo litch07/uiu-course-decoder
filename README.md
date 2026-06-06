@@ -6,7 +6,7 @@
 
 [![Microsoft Edge Add-ons](https://img.shields.io/badge/Edge_Add--ons-Coming_Soon-blue?logo=microsoft-edge&logoColor=white)](#)
 [![Firefox Add-ons](https://img.shields.io/badge/Firefox_Add--ons-Available_Now-orange?logo=firefox-browser&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/uiu-course-code-decoder/)
-[![GitHub Release](https://img.shields.io/github/v/release/litch07/uiu-course-decoder?style=flat-square)](#)
+[![GitHub Release](https://img.shields.io/github/v/release/litch07/uiu-course-decoder?style=flat-square)](https://github.com/litch07/uiu-course-decoder/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 </div>
@@ -60,7 +60,7 @@ Our official listings are currently under review!
 If you want to try the latest version now:
 
 1. **Download the Extension:**
-   - Go to the [Releases page](https://github.com/litch07/uiu-course-decoder/releases) and download the latest `.zip` file.
+   - Go to the **[Latest Release Page](https://github.com/litch07/uiu-course-decoder/releases/latest)** and download the `.zip` file.
    - Extract the `.zip` file to a folder on your computer.
 
 2. **Install on Chrome / Edge / Brave / Opera:**
