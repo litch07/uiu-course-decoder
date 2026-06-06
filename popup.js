@@ -28,13 +28,41 @@
     importMsg: document.getElementById("importMsg"),
   };
 
-  // SVG icons we use for button states
-  const icons = {
-    default: `<svg style="width:13px;height:13px;fill:white;" viewBox="0 0 24 24"><path d="M12 2v4c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8V2zm1.88 3.88L17.76 9.76l-1.41 1.41L12.46 7.29 8.59 11.17l-1.41-1.41 5.29-5.29 1.41 1.41z"/></svg>`,
-    spinner: `<svg style="width:13px;height:13px;fill:white;animation:spin 1s linear infinite;" viewBox="0 0 24 24"><path d="M12 4V2C6.48 2 2 6.48 2 12h2c0-4.41 3.59-8 8-8z"/></svg><style>@keyframes spin{100%{transform:rotate(360deg);}}</style>`,
-    success: `<svg style="width:13px;height:13px;fill:white;" viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>`,
-    error: `<svg style="width:13px;height:13px;fill:white;" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`,
-  };
+  // Helper to create SVG icons safely
+  function createIcon(type) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    
+    if (type === 'default') {
+      svg.setAttribute("style", "width:13px;height:13px;fill:white;");
+      path.setAttribute("d", "M12 2v4c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8V2zm1.88 3.88L17.76 9.76l-1.41 1.41L12.46 7.29 8.59 11.17l-1.41-1.41 5.29-5.29 1.41 1.41z");
+    } else if (type === 'spinner') {
+      svg.setAttribute("style", "width:13px;height:13px;fill:white;animation:spin 1s linear infinite;");
+      path.setAttribute("d", "M12 4V2C6.48 2 2 6.48 2 12h2c0-4.41 3.59-8 8-8z");
+      if (!document.getElementById('spin-style')) {
+        const style = document.createElement('style');
+        style.id = 'spin-style';
+        style.textContent = "@keyframes spin{100%{transform:rotate(360deg);}}";
+        document.head.appendChild(style);
+      }
+    } else if (type === 'success') {
+      svg.setAttribute("style", "width:13px;height:13px;fill:white;");
+      path.setAttribute("d", "M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z");
+    } else if (type === 'error') {
+      svg.setAttribute("style", "width:13px;height:13px;fill:white;");
+      path.setAttribute("d", "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z");
+    } else if (type === 'delete') {
+      svg.setAttribute("style", "width:13px;height:13px;fill:currentColor;");
+      path.setAttribute("d", "M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z");
+    } else if (type === 'remove') {
+      svg.setAttribute("style", "width:13px;height:13px;fill:currentColor;");
+      path.setAttribute("d", "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z");
+    }
+    
+    svg.appendChild(path);
+    return svg;
+  }
 
   let currentHost = "";
   let courses = {};
@@ -122,11 +150,16 @@
   }
 
   function renderAllowlist() {
-    els.allowlistContainer.innerHTML = "";
+    els.allowlistContainer.textContent = "";
 
     if (allowedSites.length === 0) {
-      els.allowlistContainer.innerHTML =
-        `<div style="padding:7px;text-align:center;color:var(--text-muted);font-size:0.7rem;">No domains allowed yet.</div>`;
+      const msg = document.createElement("div");
+      msg.style.padding = "7px";
+      msg.style.textAlign = "center";
+      msg.style.color = "var(--text-muted)";
+      msg.style.fontSize = "0.7rem";
+      msg.textContent = "No domains allowed yet.";
+      els.allowlistContainer.appendChild(msg);
       return;
     }
 
@@ -139,7 +172,7 @@
       span.textContent = site;
 
       const btn = document.createElement("button");
-      btn.innerHTML = `<svg style="width:13px;height:13px;fill:currentColor;" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`;
+      btn.appendChild(createIcon('remove'));
       btn.title = `Remove ${site}`;
       btn.addEventListener("click", async () => {
         allowedSites = allowedSites.filter(s => s !== site);
@@ -165,13 +198,26 @@
       .sort((a, b) => a[0].localeCompare(b[0]));
 
     if (entries.length === 0) {
-      els.courseList.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">${filter ? "🔍" : "📚"}</div>
-          ${filter
-          ? `No results for "<strong>${escapeHtml(filter)}</strong>"`
-          : "No courses loaded yet. Import from JSON below."}
-        </div>`;
+      const emptyState = document.createElement("div");
+      emptyState.className = "empty-state";
+      
+      const emptyIcon = document.createElement("div");
+      emptyIcon.className = "empty-icon";
+      emptyIcon.textContent = filter ? "🔍" : "📚";
+      emptyState.appendChild(emptyIcon);
+      
+      if (filter) {
+        emptyState.appendChild(document.createTextNode('No results for "'));
+        const strong = document.createElement("strong");
+        strong.textContent = filter;
+        emptyState.appendChild(strong);
+        emptyState.appendChild(document.createTextNode('"'));
+      } else {
+        emptyState.appendChild(document.createTextNode("No courses loaded yet. Import from JSON below."));
+      }
+
+      els.courseList.textContent = "";
+      els.courseList.appendChild(emptyState);
       return;
     }
 
@@ -191,7 +237,7 @@
       const delBtn = document.createElement("button");
       delBtn.className = "course-row-del";
       delBtn.title = `Delete ${code}`;
-      delBtn.innerHTML = `<svg style="width:13px;height:13px;fill:currentColor;" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
+      delBtn.appendChild(createIcon('delete'));
       delBtn.addEventListener("click", async () => {
         delete courses[code];
         // Only delete from userCourses if the user added it manually.
@@ -216,7 +262,7 @@
       frag.appendChild(row);
     });
 
-    els.courseList.innerHTML = "";
+    els.courseList.textContent = "";
     els.courseList.appendChild(frag);
   }
 
@@ -354,7 +400,9 @@
 
     // Talk to the background script to reload courses from our JSON file
     els.reloadBtn.addEventListener("click", async () => {
-      els.reloadBtn.innerHTML = `${icons.spinner} Reloading Database…`;
+      els.reloadBtn.textContent = "";
+      els.reloadBtn.appendChild(createIcon('spinner'));
+      els.reloadBtn.appendChild(document.createTextNode(" Reloading Database…"));
       els.reloadBtn.disabled = true;
 
       try {
@@ -364,18 +412,24 @@
         updateCourseCount();
 
         const count = Object.keys(courses).length;
-        els.reloadBtn.innerHTML = `${icons.success} Loaded ${count} Courses`;
+        els.reloadBtn.textContent = "";
+        els.reloadBtn.appendChild(createIcon('success'));
+        els.reloadBtn.appendChild(document.createTextNode(` Loaded ${count} Courses`));
         els.reloadBtn.style.background = "linear-gradient(135deg, #10b981, #059669)";
         if (currentTabId) {
           chrome.tabs.sendMessage(currentTabId, { type: "COURSES_UPDATED" }).catch(() => { });
         }
       } catch (err) {
         console.error("Course reload failed:", err);
-        els.reloadBtn.innerHTML = `${icons.error} Update Failed`;
+        els.reloadBtn.textContent = "";
+        els.reloadBtn.appendChild(createIcon('error'));
+        els.reloadBtn.appendChild(document.createTextNode(" Update Failed"));
         els.reloadBtn.style.background = "linear-gradient(135deg, #ef4444, #dc2626)";
       } finally {
         setTimeout(() => {
-          els.reloadBtn.innerHTML = `${icons.default} Reload Courses from File`;
+          els.reloadBtn.textContent = "";
+          els.reloadBtn.appendChild(createIcon('default'));
+          els.reloadBtn.appendChild(document.createTextNode(" Reload Courses from File"));
           els.reloadBtn.style.background = "";
           els.reloadBtn.disabled = false;
         }, 2500);
