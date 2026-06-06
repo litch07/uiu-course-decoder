@@ -4,7 +4,8 @@
 
 *Decode course codes into full course names instantly on any webpage!*
 
-[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Coming_Soon-blue?logo=google-chrome&logoColor=white)](#)
+[![Microsoft Edge Add-ons](https://img.shields.io/badge/Edge_Add--ons-Coming_Soon-blue?logo=microsoft-edge&logoColor=white)](#)
+[![Firefox Add-ons](https://img.shields.io/badge/Firefox_Add--ons-Available_Now-orange?logo=firefox-browser&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/uiu-course-code-decoder/)
 [![GitHub Release](https://img.shields.io/github/v/release/litch07/uiu-course-decoder?style=flat-square)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -48,12 +49,12 @@ This lightweight, privacy-focused Chrome extension automatically replaces course
 
 ## 🚀 Installation
 
-You can install the extension directly from the Chrome Web Store or manually via Developer Mode.
+You can install the extension directly from the Edge or Firefox Add-on stores, or manually via Developer Mode (for Chrome, Brave, Opera, etc).
 
-### Method 1: Chrome Web Store (Coming Soon!)
-1. Go to the **Chrome Web Store Link** *(Pending release)*
-2. Click **"Add to Chrome"**.
-3. Confirm the installation and you are good to go!
+### Method 1: Edge & Firefox Add-on Stores (Coming Soon!)
+Our official listings are currently under review!
+- **Microsoft Edge**: Go to the **Edge Add-ons Link** *(Pending release)*
+- **Firefox**: Get it from the [Mozilla Add-ons Store](https://addons.mozilla.org/en-US/firefox/addon/uiu-course-code-decoder/)
 
 ### Method 2: Manual Installation (Developer Mode)
 If you want to try the latest version now:
@@ -62,15 +63,14 @@ If you want to try the latest version now:
    - Go to the [Releases page](https://github.com/litch07/uiu-course-decoder/releases) and download the latest `.zip` file.
    - Extract the `.zip` file to a folder on your computer.
 
-2. **Open Chrome Extensions Page:**
-   - In Chrome, navigate to `chrome://extensions/` in your address bar.
+2. **Install on Chrome / Edge / Brave / Opera:**
+   - Navigate to `chrome://extensions/` (or `edge://extensions/`).
+   - Turn on **Developer mode** in the top right corner.
+   - Click **"Load unpacked"** and select the extracted folder.
 
-3. **Enable Developer Mode:**
-   - Turn on the **Developer mode** toggle in the top right corner.
-
-4. **Load the Extension:**
-   - Click the **"Load unpacked"** button in the top left.
-   - Select the folder where you extracted the extension files.
+3. **Install on Firefox (Temporary for testing):**
+   - Navigate to `about:debugging#/runtime/this-firefox`.
+   - Click **"Load Temporary Add-on..."** and select the `.zip` file directly.
 
 The extension is now installed and ready to use! 🎉
 
