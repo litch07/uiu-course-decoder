@@ -33,6 +33,7 @@ This lightweight, privacy-focused Chrome extension automatically replaces course
 ## ✨ Features
 
 - **🪄 Automatic Decoding:** Instantly decodes course codes on the pages you visit.
+- **🎓 Pre-loaded Departments:** Comes fully packed with built-in databases for **CSE, EEE, BBA, and Data Science** courses right out of the box!
 - **🧠 Smart Parsing:** Seamlessly handles course codes split across multiple lines, missing spaces, or broken by HTML tags.
 - **🖼️ Iframe Support:** Works flawlessly inside embedded pages, such as Google Sheets routines!
 - **🎨 Multiple Display Modes:** Choose exactly how you want to see the course names:
@@ -154,7 +155,9 @@ Your privacy is our priority. All settings and course lists are saved directly i
 
 ## 🤝 Contributing
 
-We welcome contributions! Whether you're fixing a bug, adding a feature, or just improving the documentation, your help is deeply appreciated. 
+We welcome contributions! Currently, we are missing courses from several departments. If your department's courses aren't decoded yet, we would love your help to extract and add them!
+
+Whether you're adding missing courses, fixing a bug, or just improving the documentation, your help is deeply appreciated. 
 
 Please see our [Contributing Guidelines](CONTRIBUTING.md) for full details on how to get started, create a branch, and open a Pull Request. If you find a bug or have a suggestion, please [open an issue](https://github.com/litch07/uiu-course-decoder/issues).
 

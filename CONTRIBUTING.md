@@ -4,7 +4,9 @@ First off, thank you for considering contributing to this project! This tool is 
 
 ## 📚 Adding Missing Courses
 
-The most helpful way to contribute is by adding missing course codes to our database (`courses.json`). 
+Currently, the extension is pre-loaded with **CSE, EEE, BBA, and Data Science** courses. However, there are many other department courses that we haven't been able to extract yet!
+
+The single most helpful way to contribute is by adding these missing course codes to our database (`courses.json`). Whether you want to add your entire department's curriculum or just a few electives, every bit helps! 
 
 ### How to format `courses.json`
 The `courses.json` file is a simple key-value dictionary where the **Key** is the course code and the **Value** is the full course name.
