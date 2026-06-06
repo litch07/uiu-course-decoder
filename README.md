@@ -154,15 +154,9 @@ Your privacy is our priority. All settings and course lists are saved directly i
 
 ## 🤝 Contributing
 
-We welcome contributions! Whether you're fixing a bug, adding a feature, or just improving the documentation, your help is appreciated.
+We welcome contributions! Whether you're fixing a bug, adding a feature, or just improving the documentation, your help is deeply appreciated. 
 
-1. Fork the repository.
-2. Create a new branch: `git checkout -b feature/your-feature-name`
-3. Make your changes and commit them: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature/your-feature-name`
-5. Open a Pull Request.
-
-If you find a bug or have a suggestion, please [open an issue](https://github.com/litch07/uiu-course-decoder/issues).
+Please see our [Contributing Guidelines](CONTRIBUTING.md) for full details on how to get started, create a branch, and open a Pull Request. If you find a bug or have a suggestion, please [open an issue](https://github.com/litch07/uiu-course-decoder/issues).
 
 ---
 
