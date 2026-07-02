@@ -4,7 +4,7 @@
 
 *Decode course codes into full course names instantly on any webpage!*
 
-[![Microsoft Edge Add-ons](https://img.shields.io/badge/Edge_Add--ons-Coming_Soon-blue?logo=microsoft-edge&logoColor=white)](#)
+[![Microsoft Edge Add-ons](https://img.shields.io/badge/Edge_Add--ons-Available_Now-blue?logo=microsoft-edge&logoColor=white)](https://microsoftedge.microsoft.com/addons/detail/uiu-course-code-decoder/dnahpleadipkgknggmeeljcnmhcodpgk?hl=en-US)
 [![Firefox Add-ons](https://img.shields.io/badge/Firefox_Add--ons-Available_Now-orange?logo=firefox-browser&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/uiu-course-code-decoder/)
 [![GitHub Release](https://img.shields.io/github/v/release/litch07/uiu-course-decoder?style=flat-square)](https://github.com/litch07/uiu-course-decoder/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -52,9 +52,9 @@ This lightweight, privacy-focused Chrome extension automatically replaces course
 
 You can install the extension directly from the Edge or Firefox Add-on stores, or manually via Developer Mode (for Chrome, Brave, Opera, etc).
 
-### Method 1: Edge & Firefox Add-on Stores (Coming Soon!)
-Our official listings are currently under review!
-- **Microsoft Edge**: Go to the **Edge Add-ons Link** *(Pending release)*
+### Method 1: Edge & Firefox Add-on Stores
+Install the extension directly in your browser:
+- **Microsoft Edge**: Get it from the [Edge Add-ons Store](https://microsoftedge.microsoft.com/addons/detail/uiu-course-code-decoder/dnahpleadipkgknggmeeljcnmhcodpgk?hl=en-US)
 - **Firefox**: Get it from the [Mozilla Add-ons Store](https://addons.mozilla.org/en-US/firefox/addon/uiu-course-code-decoder/)
 
 ### Method 2: Manual Installation (Developer Mode)
