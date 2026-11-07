@@ -26,7 +26,7 @@
 
 ### 1. In-Page Schedule Decoding (UCAM & eLMS)
 
-Translates course codes (`CSE 1111`, `CSI 217`, `BMT 1103`, `DS 1501`, etc.) directly inside active class routines, advising schedules, and grade sheets with three selectable display treatments:
+Translates course codes (`CSE 1110`, `CSE 1111`, `CSI 217`, `BMT 1103`, `DS 1501`, etc.) directly inside active class routines, advising schedules, and grade sheets with three selectable display treatments:
 
 | Highlight Mode | Tooltip Mode | Inline Mode |
 |:---:|:---:|:---:|
@@ -59,7 +59,7 @@ Click the toolbar icon to access the compact dashboard:
 | <img src="assets/img/popup-home.png" width="180" alt="Home Dashboard" /> | <img src="assets/img/popup-catalog.png" width="180" alt="Course Catalog" /> | <img src="assets/img/popup-roadmap.png" width="180" alt="Prerequisite Roadmap" /> | <img src="assets/img/popup-exam-planner.png" width="180" alt="Exam Clash Planner" /> |
 
 - **Home Dashboard**: Master on/off toggle, mode selector (Highlight / Tooltip / Inline), and metadata switches.
-- **Course Catalog**: Instant offline search across 300+ UIU courses by code or title with credit tags, exam slots, and prerequisite chips.
+- **Course Catalog**: Instant offline search across the university-wide course catalog by code or title with credit tags, exam slots, and prerequisite chips.
 - **Prerequisite Roadmap**: Visual sequence tracking foundation courses required first (*Prerequisite path*) and advanced courses unlocked downstream (*What comes next*).
 - **Exam Clash Planner**: Real-time conflict detection highlighting same-slot exam clashes (e.g., **Day 4 T2** conflict), daily exam counts, total tuition credit calculation, and Markdown schedule export.
 

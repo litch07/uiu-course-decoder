@@ -27,7 +27,7 @@
 After installing the extension, click your browser's puzzle icon (Extensions) and pin **UIU Course Code Decoder** to your toolbar for immediate one-click access.
 
 ### 1.2 First-Run Welcome Card
-On your first launch, the extension presents a streamlined onboarding card. Click **Get started** to initialize the default catalog of 300+ UIU courses. No registration, login, or personal details are required.
+On your first launch, the extension presents a streamlined onboarding card. Click **Get started** to initialize the default university course catalog. No registration, login, or personal details are required.
 
 ### 1.3 Home Dashboard Overview
 Clicking the toolbar icon opens the compact popup dashboard:
@@ -197,7 +197,7 @@ Export your course records for backups, semester sharing, or curriculum developm
 |:---:|:---:|
 | <img src="assets/img/popup-catalog-export.png" width="280" alt="Full catalog export dialog" /> | <img src="assets/img/popup-catalog-export-filtered.png" width="280" alt="Contextual filtered export" /> |
 
-- **Full Catalog**: Export all 300+ courses into a standard UIU JSON catalog.
+- **Full Catalog**: Export all departmental courses into a standard UIU JSON catalog.
 - **Filtered Export**: When searching or filtering, export only the matching subset of courses.
 
 ---
