@@ -24,7 +24,9 @@ yarn-error.log
 # Build artifacts and release folders
 dist/
 build/
+scratch/
 *.zip
 *.crx
 *.pem
 releases/
+.git_backup/

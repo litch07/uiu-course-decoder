@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "UIU Course Code Decoder",
-  "version": "1.0.1",
-  "description": "Never guess a course code again – decodes UIU course codes into full names on any webpage.",
+  "version": "2.0.0",
+  "description": "Decode UIU course codes on enabled websites, explore prerequisites, and spot exam clashes in your plan.",
   "browser_specific_settings": {
     "gecko": {
       "id": "uiu-course-decoder@ssadidahmed01",
@@ -17,31 +17,20 @@
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "tabs"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "https://raw.githubusercontent.com/*",
+    "*://docs.google.com/*",
+    "*://*.uiu.ac.bd/*"
+  ],
+  "optional_host_permissions": [
+    "*://*/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
-  "content_scripts": [
-    {
-      "matches": [
-        "<all_urls>"
-      ],
-      "exclude_matches": [
-        "*://*/*.pdf",
-        "*://*/*.svg",
-        "*://*/*.xml"
-      ],
-      "js": [
-        "content.js"
-      ],
-      "all_frames": true,
-      "run_at": "document_idle"
-    }
-  ],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
