@@ -82,12 +82,13 @@ Comprehensive guides are available in the repository:
 
 - **Microsoft Edge**: [Install from Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/uiu-course-code-decoder/dnahpleadipkgknggmeeljcnmhcodpgk?hl=en-US)
 - **Mozilla Firefox**: [Install from Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/uiu-course-code-decoder/)
+- **Opera**: Submitted to Opera Add-ons *(awaiting moderation)*
 
 ### Direct Installation (Google Chrome, Brave, Opera)
 
 For browsers without a direct web store listing, load the extension in under 30 seconds via **Developer Mode**:
 
-1. **Download the source**: Download this repository as a [ZIP archive](https://github.com/litch07/uiu-course-decoder/archive/refs/heads/main.zip) (or run `git clone`) and extract it.
+1. **Download the package**: Download the pre-packaged [uiu-course-code-decoder-v2.0.0-chromium.zip](https://github.com/litch07/uiu-course-decoder/releases/latest/download/uiu-course-code-decoder-v2.0.0-chromium.zip) (or run `git clone`) and extract it.
 2. **Open Extensions Manager**:
    - **Google Chrome**: `chrome://extensions/`
    - **Brave**: `brave://extensions/`
